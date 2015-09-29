@@ -96,8 +96,7 @@ double logmatrixDet(double *Matrix, int nrow){
 
 }
 
-void cholesky(double* A, int n, double* L, int normalize)
-{
+void cholesky(double* A, int n, double* L, int normalize){
         double s;
         int i,j,k;
         double max, min, norm = 1.0;
@@ -166,9 +165,6 @@ double SVD(double *G, double *Factors, double *Lambda, int K, int nSNP, int nIND
                 }
         }
         int res = dgesvd_("a", "a", (integer *) &m, (integer *) &n, (doublereal *) A, (integer *) &lda, (doublereal *) singValues, (doublereal *) U, (integer *) &ldu, (doublereal *) Vt, (integer *) &ldv, (doublereal *) work, (integer *) &lwork, (integer *) &info);
-//      int res = dgesdd_("a", (integer *) &m, (integer *) &n, (doublereal *) A, (integer *) &lda, (doublereal *) singValues, (doublereal *) U, (integer *) &ldu, (doublereal *) Vt, (integer *) &ldv, (doublereal *) work, (integer *) &lwork, (integer *) iwork, (integer *) &info);
-//      int res = dsvdc_((doublereal *) A, (integer *) &lda, (integer *) &m, (integer *) &n, (doublereal *) singValues, (doublereal *) err, (doublereal *) U, (integer *) &ldu, (doublereal *) Vt, (integer *) &ldv, (doublereal *) work, (integer *) &job, (integer *) &info);
-        //int res = dgesvd_("a", "a", &m, &n, A, &lda, singValues, U, &ldu, Vt, &ldv, work, &lwork, &info);
         for (i=0; i<nSNP; i++){
                 for (j=0; j<K; j++){
                         Factors[i*K + j] = U[j*ldu + i]*singValues[j];
@@ -198,12 +194,7 @@ double SVD(double *G, double *Factors, double *Lambda, int K, int nSNP, int nIND
 void tAA(double *A, double *tAA, int nrow, int ncol){
 
         /* matrix given A is column lead */
-/*              long int nrtA = ncol, nctB = ncol, nctA = nrow, nrtB = nrow;
-                long int ldc = ncol, lda = nrtA, ldb = nctB;
-                double alpha = 1, beta = 0;
-                int r = dgemm_("N", "T", &nrtA, &nctB, &nctA, &alpha, A, &lda, A, &ldb, &beta, tAA, &ldc);
-
-*/              int i;
+              int i;
                 double *tA = malloc(sizeof(double)*nrow*ncol);
                 for (i=0; i<nrow*ncol; i++) tA[i] = A[i];
                 long int nrtA = ncol, nctB = ncol, nctA = nrow, nrtB = nrow;

@@ -5,6 +5,10 @@
 #include "matrix.h"
 #include "random.h"
 
+/*
+ * Library of function to update the parameters in the MCMC algorithm run by runMCMC in MCMC.h
+ */
+
 
 void updateMu(double *mu, double *G, double *Factors, double *Lambda, double sigma2, int nSNP, int nIND, int K);
 
