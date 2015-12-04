@@ -35,16 +35,17 @@
 //get_row
 ////read a block of lines (snp), scale it and store it
 
-int get_row(double *Geno, FILE *GenoFile, int nIND, double *mean, double *SNPSd, int sc, int blocksize){
+int get_row(double *Geno, FILE *GenoFile, int nIND, double *mean, double *SNPSd, int sc, int blocksize, int haploid, double min_AF, int *low_AF_tot){
 
 	float value;
-	int snp, ind, na_tot = 0, na;
-	double var;
+	int snp, ind, na_tot = 0, na, low_AF = 0;
+	double var, maf;
 	for(snp=0; snp<blocksize; snp++){
 		ind = 0;
 		var = 0;
 		na = 0;
 		*mean = 0;
+		maf = 0;
 		while(ind < nIND){
 				if(fscanf(GenoFile, "%g", &value) != EOF){
         		                Geno[snp*nIND + ind] = (double) value;
@@ -54,25 +55,45 @@ int get_row(double *Geno, FILE *GenoFile, int nIND, double *mean, double *SNPSd,
 		}
 		if (nIND <= na)	{
 			*mean = NA;
+			maf = NA;
 		} else {
 			*mean /= (nIND - na);
-		}
-		for (ind=0; ind<nIND; ind++) { if(Geno[snp*nIND + ind] != NA) {Geno[snp*nIND + ind] -= *mean; var += Geno[snp*nIND + ind]*Geno[snp*nIND + ind];} else { Geno[snp*nIND + ind] = 0; } } 
-		if (sc){
-			if (var > TOL){
-				var = var/(nIND - na);
-				for (ind=0; ind<nIND; ind++) {Geno[snp*nIND + ind] /= sqrt(var);}
-//mAF filtering
-//				if (*mean < .1 || *mean > 1.9) for (ind=0; ind<nIND; ind++) {Geno[snp*nIND + ind] = 0;}
-				SNPSd[snp] = sqrt(var);
-			} else {
-				SNPSd[snp] = 1;
+			maf = *mean;
+			if (*mean > 1) maf = 2 - *mean;
+			maf = (double) maf/2.0;
+			if (haploid){
+				maf = *mean;
+				if(*mean > .5) maf = 1.0 - *mean;
 			}
-		} else {
-			SNPSd[snp] = sqrt(var/(nIND - na));
 		}
-		na_tot += na;
+		if (maf > min_AF){
+			for (ind=0; ind<nIND; ind++) { if(Geno[snp*nIND + ind] != NA) {Geno[snp*nIND + ind] -= *mean; var += Geno[snp*nIND + ind]*Geno[snp*nIND + ind];} else { Geno[snp*nIND + ind] = 0; } } 
+			if (sc){
+				if (var > TOL){
+//Use empirical variance
+//					var = var/(nIND - na);
+//Use parametric variance
+					var = 2*maf*(1.0 - maf);
+					if (haploid) var = maf*(1 - maf);
+					for (ind=0; ind<nIND; ind++) {Geno[snp*nIND + ind] /= sqrt(var);}
+//mAF filtering
+//					if (*mean < .1 || *mean > 1.9) for (ind=0; ind<nIND; ind++) {Geno[snp*nIND + ind] = 0;}
+					SNPSd[snp] = sqrt(var);
+				} else {
+					SNPSd[snp] = 1;
+				}
+			} else {
+				SNPSd[snp] = sqrt(var/(nIND - na));
+			}
+			na_tot += na;
+		} else {
+			SNPSd[snp] = 1;
+			for (ind=0; ind<nIND; ind++) Geno[snp*nIND + ind] = 0;
+			low_AF++;
+		}
 	}
+	*mean = maf;
+	*low_AF_tot += low_AF;
 	return na_tot;
 }
 
@@ -91,10 +112,10 @@ void add_to_cov(double *Cov, double *scratchCov, int nIND, double *Geno, int blo
 //function to learn covariance (or cor) matrix, while reading a data file, by storing blocks of lines.
 //TODO: parallelize
 
-int Cov_line(double *Cov, double *SNPSd, int nSNP, int *nSNP_file, int nIND, int sc, char **GenoFileName, int nfile){
+int Cov_line(double *Cov, double *SNPSd, int nSNP, int *nSNP_file, int nIND, int sc, char **GenoFileName, int nfile, int haploid, double min_AF){
 	FILE *GenoFile;
 	double var, mean;
-	int i, na, na_tot = 0, file;
+	int i, na, na_tot = 0, file, low_AF_tot = 0;
 	int *missing;
 	int blocksize = 120, snp_count = 0;
 	double *Geno = calloc(nIND*blocksize, sizeof(double));
@@ -109,7 +130,7 @@ int Cov_line(double *Cov, double *SNPSd, int nSNP, int *nSNP_file, int nIND, int
 	        }
 		for (i=0; i<nSNP_file[file] ; i += blocksize){
 			if (nSNP_file[file] - i < blocksize) blocksize = nSNP_file[file] - i;
-			na = get_row(Geno, GenoFile, nIND, &mean, SNPSd + i + snp_count, sc, blocksize);
+			na = get_row(Geno, GenoFile, nIND, &mean, SNPSd + i + snp_count, sc, blocksize, haploid, min_AF, &low_AF_tot);
 			add_to_cov(Cov, scratchCov, nIND, Geno, blocksize);
 			na_tot += na;
 		}
@@ -117,6 +138,7 @@ int Cov_line(double *Cov, double *SNPSd, int nSNP, int *nSNP_file, int nIND, int
 		fclose(GenoFile);
 	}
 
+	printf("%i SNPs with maf lower than %g ignored (set to 0)\n", low_AF_tot, min_AF);
 	if (na_tot) printf("%i out of %i missing data ignored\n", na_tot, nSNP*nIND);
 	free(Geno);
 	return 0;

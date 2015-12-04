@@ -13,8 +13,7 @@
 
 #define MAXFILE 64
 
-/* FastPCAdapt
- * main function of the fast version.
- */
+//FastPCAdapt
+//main function of the fast version
 int FastPCAdapt(int argc, char* argv[]);
 
