@@ -3,10 +3,6 @@
 
 #define PI (3.141592653589793)
 
-/*
- * Library of function to generate random variables or vectors, from different distributions.
- */
-
 void init_random();
 
 double drand();

@@ -35,10 +35,10 @@
 //Load_line
 //computes the U matrix, by block of snps, with no storage.
 
-int Load_line(double *U, double *Sigma, double *V, double *miss, double *mAF, int nSNP, int *nSNP_file, int K, int nIND, int sc, char **GenoFileName, int nfile, int haploid, double min_AF){
+int Load_line(double *U, double *Sigma, double *V, double *miss, double *mAF, int nSNP, int *nSNP_file, int K, int nIND, int *pairwiseObs, int sc, char **GenoFileName, int nfile){
 
 	FILE *GenoFile;
-	int i, ii, j, na, na_tot = 0, file, snp_count = 0, low_AF_tot = 0;
+	int i, ii, j, na, na_tot = 0, file, snp_count = 0;
 	int *missing;
 	double var, mean, ploidy = 2.0;
 	double *Geno = calloc(nIND, sizeof(double));
@@ -57,10 +57,10 @@ int Load_line(double *U, double *Sigma, double *V, double *miss, double *mAF, in
 
 		for (i=0; i<nSNP_file[file]; i++){
 			ii = i + snp_count;
-			na = get_row(Geno, GenoFile, nIND, &mean, &var, sc, 1, haploid, min_AF, &low_AF_tot);
+			na = get_row(Geno, GenoFile, nIND, &mean, &var, pairwiseObs, sc, 1);
 			miss[ii] = na;
 			mAF[ii] = mean;
-//			if(mAF[ii] != NA) mAF[ii] = (mAF[ii]/ploidy < 1 - mAF[ii]/ploidy) ? mAF[ii]/ploidy : 1 - mAF[ii]/ploidy;
+			if(mAF[ii] != NA) mAF[ii] = (mAF[ii]/ploidy < 1 - mAF[ii]/ploidy) ? mAF[ii]/ploidy : 1 - mAF[ii]/ploidy;
 			prodMatrix(Geno, V, (U + K*(ii)), 1, nIND, nIND, K);
 		}
 

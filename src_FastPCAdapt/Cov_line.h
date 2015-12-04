@@ -13,15 +13,18 @@
 //read a block of lines (snp), scale it and store it
 
 
-int get_row(double *Geno, FILE *GenoFile, int nIND, double *mean, double *SNPSd, int sc, int blocksize, int haploid, double min_AF, int *low_AF_tot);
+int get_row(double *Geno, FILE *GenoFile, int nIND, double *mean, double *SNPSd, int *pairwiseObs, int sc, int blocksize);
 
 //add_to_cov
 //Given a block of snps, computes correlation matrix of the block and add it to the existing matrix.
 
 void add_to_cov(double *Cov, double *scratchCov, int nIND, double *Geno, int blocksize);
 
+//add_to_obs
+void add_to_obs(int *pairwiseObs, double *scratchCov, int nIND, double *Geno, int blocksize);
+
 //Cov_line
 //function to learn covariance (or cor) matrix, while reading a data file, by storing blocks of lines.
 //TODO: parallelize
 
-int Cov_line(double *Cov, double *SNPSd, int nSNP, int *nSNP_file, int nIND, int sc, char **GenoFileName, int nfile, int haploid, double min_AF);
+int Cov_line(double *Cov, double *SNPSd, int nSNP, int *nSNP_file, int nIND, int *pairwiseObs, int sc, char **GenoFileName, int nfile);

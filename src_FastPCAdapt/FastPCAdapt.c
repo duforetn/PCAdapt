@@ -37,25 +37,26 @@ int FastPCAdapt(int argc, char* argv[]){
 	char **GenoFileName = malloc(sizeof(char)*MAXFILE);
 	char *OutputFileName = malloc(sizeof(char)*256);
 	char *subSampleName = malloc(sizeof(char)*256);
-	int nSNP, nIND, K = 2, runSVD = 0, tmp, nF, nfile, haploid = 1;
+	int nSNP, nIND, K = 2, runSVD = 0, tmp, nF, nfile;
+	int *pairwiseObs;
 	int na, err = 0, sc = 1, i;
-	double *Genotypes, *U, *V, *Sigma, *SNPSd, *Cov, *mAF, *miss, prop = .01, min_AF = 0; 
+	double *Genotypes, *U, *V, *Sigma, *SNPSd, *Cov, *mAF, *miss, prop = .01; 
 	int nSNP_file[MAXFILE];
 
 	/* handleparams: gestion des paramètres */
-	if (argc > 2){Welcome__f(0); if(handleParams__f(argc, argv, &nSNP, &nIND, &Genotypes, GenoFileName, &OutputFileName, &K, &runSVD, &subSampleName, &sc, &nfile, nSNP_file, &prop, &haploid, &min_AF)) return 0;} else {Welcome__f(1); return 0;}
+	if (argc > 2){Welcome__f(0); if(handleParams__f(argc, argv, &nSNP, &nIND, &Genotypes, GenoFileName, &OutputFileName, &K, &runSVD, &subSampleName, &sc, &nfile, nSNP_file, &prop)) return 0;} else {Welcome__f(1); return 0;}
 
 	nF = nIND > nSNP ? nSNP : nIND;
 	nF = K;
 	/* Allocation de mémoire */
-        initializeVariables__f(&U, &Sigma, &V, &SNPSd, &Cov, &miss, &mAF, nF, nSNP, nIND);
+        initializeVariables__f(&U, &Sigma, &V, &SNPSd, &Cov, &miss, &mAF, &pairwiseObs, nF, nSNP, nIND);
         if(!strcmp(OutputFileName, "")) OutputFileName = "FastPCAdapt_output";
         printf("results in files %s*\n", OutputFileName);
 
 	/* Calcule la matrice de covariance nxn */
-	err = Cov_line(Cov, SNPSd, nSNP, nSNP_file, nIND, sc, GenoFileName, nfile, haploid, min_AF);
+	err = Cov_line(Cov, SNPSd, nSNP, nSNP_file, nIND, pairwiseObs, sc, GenoFileName, nfile);
 	if (err) return 0;
-printf("Covariance estimated\n");
+	printf("Covariance estimated\n");
 
 	/* diagonalisation de la matrice nxn */
 	/* renvoie la racine des valeurs propres dans Sigma */
@@ -63,7 +64,7 @@ printf("Covariance estimated\n");
 	diagonalize(Cov, nIND, K, Sigma, V);
 /* V is a nxK matrix */
 	/* calcule la matrice U (K x p) */
-	err = Load_line(U, Sigma, V, miss, mAF, nSNP, nSNP_file, K, nIND, sc, GenoFileName, nfile, haploid, min_AF);
+	err = Load_line(U, Sigma, V, miss, mAF, nSNP, nSNP_file, K, nIND, pairwiseObs, sc, GenoFileName, nfile);
 	if (err) return 0;
 printf("loadings computed\n");
 	/* now we refer to V as tV, the K * nIND matrix */
@@ -72,6 +73,7 @@ printf("loadings computed\n");
 	/* Calcule les stats de l'ACP sur les loadings */
         getstat(U, Sigma, V, SNPSd, miss, mAF, nSNP, K, nIND, nF, sc, nSNP_file, GenoFileName, OutputFileName, nfile, prop);
         writeMatrix__f(U, Sigma, V, nSNP, K, nIND, nF, OutputFileName);
+//	displayMatrix(Cov, nIND, nIND);
 
 	free(miss);
 	free(mAF);

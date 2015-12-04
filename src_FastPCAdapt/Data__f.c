@@ -33,10 +33,10 @@ void Welcome__f(int help){
 	printf("\t\t\\****************************/\n\n");
 	printf("\n\n");
 
-	if (help) printf("Command line Help:\n\t-i paths and names of the files containing your genotypes, it can be several files.\n\t-K number of factors to use\n\t-o name of the output file\n\t-S 0 do not scale the snps\n\t-h 1 for haploid data\n\t-m minimal allele frequency to consider a SNP (default is 0)\n\n");
+	if (help) printf("Command line Help:\n\t-i paths and names of the files containing your genotypes, it can be several files.\n\t-K number of factors to use\n\t-o name of the output file\n\t-S 0 do not scale the snps\n\n");
 }
 
-int initializeVariables__f(double **U, double **Sigma, double **V, double **SNPSd, double **Cov, double **miss, double **mAF, int K, int nSNP, int nIND){
+int initializeVariables__f(double **U, double **Sigma, double **V, double **SNPSd, double **Cov, double **miss, double **mAF, int **pairwiseObs, int K, int nSNP, int nIND){
 
         int i, j;
         init_random();
@@ -54,6 +54,8 @@ int initializeVariables__f(double **U, double **Sigma, double **V, double **SNPS
         for (i=0; i<K*nIND; i++) *(*(V) + i) = rand_normal_r();
 	*miss = calloc(nSNP, sizeof(double));
 	*mAF = calloc(nSNP, sizeof(double));
+	//matrix counting the number of paiwiseobs
+	*pairwiseObs = calloc(nIND*nIND, sizeof(int));
 
         return 0;
 }
@@ -68,7 +70,7 @@ int nboffile(char *argv[], int argc, int i, char *GenoFileName[]){
 	return n;
 }
 
-int handleParams__f(int argc, char *argv[], int *nSNP, int *nIND, double **Genotypes, char **GenoFileName, char **OutputFileName, int *K, int *runSVD, char **subSampleName, int *sc, int *nf, int *nSNP_file, double *prop, int *haploid, double *min_AF){
+int handleParams__f(int argc, char *argv[], int *nSNP, int *nIND, double **Genotypes, char **GenoFileName, char **OutputFileName, int *K, int *runSVD, char **subSampleName, int *sc, int *nf, int *nSNP_file, double *prop){
 
 	int i, j, tmp, nfile, snp;
 	*nSNP = 0;
@@ -101,14 +103,8 @@ int handleParams__f(int argc, char *argv[], int *nSNP, int *nIND, double **Genot
 				case 'S':
 					*sc = atoi(argv[i + 1]);
 				break;
-				case 'p':
+				case'p':
 					*prop = (double) atof(argv[i + 1]);
-				break;
-				case 'h':
-					*haploid = (int) atoi(argv[i + 1]);
-				break;
-				case 'm':
-					*min_AF = (double) atof(argv[i + 1]);
 				break;
 			}
 		}
@@ -125,7 +121,7 @@ void writeStats_multifile(char **GenoFileName, char *fileName, double *matrix, d
         FILE *resultFile;
         FILE *topFile;
         char *topfileName = calloc(256, sizeof(char));
-        strcpy(topfileName, topfileName);
+        strcpy(topfileName, fileName);
         strcat(topfileName, ".top");
 
         int i, j, file, start = 0;
@@ -218,7 +214,6 @@ void writeMatrix__f(double *U, double *Sigma, double *V, int nSNP, int K, int nI
         for (i=0; i<nF; i++){
         	fprintf(resultFile, "%f ", Sigma[i]/sqrt(nIND - 1));
         }
-	fprintf(resultFile, "\n");
         fclose(resultFile);
 
         strcpy(fileV, OutputFileName);
