@@ -57,9 +57,10 @@ int Load_line(double *U, double *Sigma, double *V, double *miss, double *mAF, in
 
 		for (i=0; i<nSNP_file[file]; i++){
 			ii = i + snp_count;
-			na = get_row(Geno, GenoFile, nIND, &mean, &var, pairwiseObs, sc, 1);
+			na = get_row(Geno, GenoFile, nIND, &mean, &var, pairwiseObs, sc, 1, 0);
 			miss[ii] = na;
 			mAF[ii] = mean;
+			for (j=0; j<nIND; j++) Geno[j] *= (double) nIND/(nIND - na); 
 			if(mAF[ii] != NA) mAF[ii] = (mAF[ii]/ploidy < 1 - mAF[ii]/ploidy) ? mAF[ii]/ploidy : 1 - mAF[ii]/ploidy;
 			prodMatrix(Geno, V, (U + K*(ii)), 1, nIND, nIND, K);
 		}

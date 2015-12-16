@@ -13,7 +13,7 @@
 //read a block of lines (snp), scale it and store it
 
 
-int get_row(double *Geno, FILE *GenoFile, int nIND, double *mean, double *SNPSd, int *pairwiseObs, int sc, int blocksize);
+int get_row(double *Geno, FILE *GenoFile, int nIND, double *mean, double *SNPSd, int *pairwiseObs, int sc, int blocksize, int calculateCov);
 
 //add_to_cov
 //Given a block of snps, computes correlation matrix of the block and add it to the existing matrix.

@@ -35,7 +35,7 @@
 //get_row
 ////read a block of lines (snp), scale it and store it
 
-int get_row(double *Geno, FILE *GenoFile, int nIND, double *mean, double *SNPSd, int *pairwiseObs, int sc, int blocksize){
+int get_row(double *Geno, FILE *GenoFile, int nIND, double *mean, double *SNPSd, int *pairwiseObs, int sc, int blocksize, int calculateCov){
 
 	float value;
 	int snp, ind, na_tot = 0, na, i, j;
@@ -88,7 +88,7 @@ int get_row(double *Geno, FILE *GenoFile, int nIND, double *mean, double *SNPSd,
 		}
 		na_tot += na;
 	}	
-	add_to_obs(pairwiseObs, scratchObs, nIND, presentSNP, blocksize);
+	if (calculateCov) add_to_obs(pairwiseObs, scratchObs, nIND, presentSNP, blocksize);
 	free(scratchObs);
 	free(presentSNP);
 	return na_tot;
@@ -136,7 +136,7 @@ int Cov_line(double *Cov, double *SNPSd, int nSNP, int *nSNP_file, int nIND, int
 	        }
 		for (i=0; i<nSNP_file[file] ; i += blocksize){
 			if (nSNP_file[file] - i < blocksize) blocksize = nSNP_file[file] - i;
-			na = get_row(Geno, GenoFile, nIND, &mean, SNPSd + i + snp_count, pairwiseObs, sc, blocksize);
+			na = get_row(Geno, GenoFile, nIND, &mean, SNPSd + i + snp_count, pairwiseObs, sc, blocksize, 1);
 			add_to_cov(Cov, scratchCov, nIND, Geno, blocksize);
 			na_tot += na;
 		}
